@@ -1,0 +1,25 @@
+{
+    "activities": [
+      {
+        "name": "Stretching",
+        "duration": 2
+      },
+      {
+        "name": "Meditation",
+        "duration": 10
+      },
+      {
+        "name": "Walk",
+        "duration": 15
+      },
+      {
+        "name": "Deep Breathing",
+        "duration": 7
+      },
+      {
+        "name": "Snack Break",
+        "duration": 20
+      }
+    ]
+  }
+  
