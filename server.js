@@ -13,9 +13,6 @@ const activitiesData = JSON.parse(fs.readFileSync("activities.json"));
 const client = new ably.Rest(
   "iI-x3Q.Jz2O0g:z20RPrzFyGx4vRxCXj-uXkRYKxyWm7Z8yltrnJIsI6Y",
 );
-app.get("/", (req, res) => {
-  res.send("RUNNING");
-});
 
 app.get("/token", (req, res) => {
   const tokenParams = {
