@@ -93,15 +93,15 @@ const App = () => {
   function showSystemNotification() {
     if (Notification in window) {
       if (Notification.permission === "granted") {
-        let notification = new Notification("Title", {
-          body: "Im notification body",
+        let notification = new Notification("Need your attention", {
+          body: "This site uses notifications for the best user experience. Thank you for understanding",
           icon: bellImage,
         });
       } else if (Notification.permission !== "denied") {
         Notification.requestPermission().then((permission) => {
           if (permission === "granted") {
-            let notification = new Notification("Title", {
-              body: "Im notification body",
+            let notification = new Notification("Need your attention", {
+              body: "This site uses notifications for the best user experience. Thank you for understanding",
               icon: bellImage,
             });
           } else if (permission === "denied") {
