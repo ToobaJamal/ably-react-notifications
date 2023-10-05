@@ -51,7 +51,7 @@ export const App = () => {
   function handleActivityNotification() {
     setTimeout(
       () => {
-        if(“Notification” in Window && Notification.permission === "granted") {
+        if(“Notification” in window && Notification.permission === "granted") {
             let notification = new Notification(`${activity.data.name}`, 
             {
               body: `After all the ${workTimeDuration} minutes of hardwork, your body deserves a ${activity.data.duration} minutes ${activity.data.name}`,
