@@ -1,26 +1,22 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const fs = require("fs");
-const ably = require("ably");
+const Ably = require("ably");
 const cors = require("cors");
 
 const app = express();
 require('dotenv').config();
-
 app.use(bodyParser.json());
 app.use(cors());
 const activitiesData = JSON.parse(fs.readFileSync("activities.json"));
-const client = new ably.Rest(
-  "iI-x3Q.Jz2O0g:z20RPrzFyGx4vRxCXj-uXkRYKxyWm7Z8yltrnJIsI6Y",
-);
 
-app.get("/token", (req, res) => {
+const client = new Ably.Rest(process.env.API_KEY);
+
+app.get("/auth", (req, res) => {
   const tokenParams = {
-    clientId: `anonymous-${Math.random().toString(36).substring(7)}`, 
-    capability: { '*': ['publish', 'subscribe'] }// Generate a random client ID
-  };
-
-  client.auth.createTokenRequest(tokenParams, (err, token) => {
+    clientId: `anonymous-${Math.random().toString(36).substring(7)}`,
+    capability: { '*': ['publish', 'subscribe'] } };
+    client.auth.createTokenRequest(tokenParams, (err, token) => {
     if (err) {
       res.status(500).json({ error: "Failed to generate token request" });
     } else {
@@ -30,11 +26,7 @@ app.get("/token", (req, res) => {
   });
 });
 
-app.get("/sendbreaktime", (req, res) => {
-  res.send(activitiesData);
-});
-
-app.post("/sendbreaktime", async (req, res) => {
+app.post("/sendbreaktime", (req, res) => {
   const { duration } = req.body;
 
   const matchedActivity = activitiesData.activities.find(
@@ -42,9 +34,8 @@ app.post("/sendbreaktime", async (req, res) => {
   );
 
   if (matchedActivity) {
-    const channel = client.channels.get("notifications");
-    
-    channel.publish("activity", matchedActivity);
+    const channel = client.channels.get("activities");
+    channel.publish("matched activity", matchedActivity);
     res.json({
       success: true,
       activity: matchedActivity,
@@ -57,7 +48,5 @@ app.post("/sendbreaktime", async (req, res) => {
   }
 });
 
+
 app.listen(3001, () => console.log("Server started on port 3001"));
-
-
-
