@@ -1,33 +1,90 @@
 import { useState, useEffect } from "react";
-import { configureAbly, useChannel } from "@ably-labs/react-hooks";
+import { useChannel } from "ably/react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import bellImage from "./assets/bell.png";
-import Ably from "ably"
+import bellImage from './assets/bell.png';
 
-const App = () => {
-  const [message, setMessage] = useState("");
+export const App = () => {
   const [breakTimeDuration, setBreakTimeDuration] = useState(0);
-  const [workTime, setWorkTime] = useState(0);
-  const [userName, setUserName] = useState("");
+  const [workTimeDuration, setWorkTimeDuration] = useState(0);
   const [activity, setActivity] = useState("");
-  configureAbly({
-    key: "iI-x3Q.Jz2O0g:z20RPrzFyGx4vRxCXj-uXkRYKxyWm7Z8yltrnJIsI6Y",
-  });
-  
-  useEffect(() => {
-  configureAbly({ authUrl: "http://127.0.0.1:3001/token" })
-  }, []);
+  const [message, setMessage] = useState("");
+  const [userName, setUserName] = useState("");
 
-  const [channel] = useChannel("notifications", (matchedActivity) => {
+  const { channel } = useChannel("activities", (matchedActivity) => {
     setActivity(matchedActivity);
   });
+
+  const { channel: messagesChannel } = useChannel("messages", (message) => {
+  setMessage(message)
+  });
+  
+  function handleMessageSubmit(e) {
+    e.preventDefault();
+    messagesChannel.publish("message", {
+      name: userName,
+      message: message,
+    });
+    setMessage("");
+    setUserName("");
+  };
+
+  function handleSubmit(e) {
+      e.preventDefault();
+  fetch("http://127.0.0.1:3001/sendbreaktime", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json;charset=utf-8",
+        },
+        body: JSON.stringify({
+          duration: breakTimeDuration,
+        }),
+      })
+        .then((response) => {
+          response.json();
+        })
+        .catch((error) => {
+          console.error("Error sending break time data:", error);
+        });
+  }
+
+  function handleActivityNotification() {
+    setTimeout(
+      () => {
+        if(“Notification” in Window && Notification.permission === "granted") {
+            let notification = new Notification(`${activity.data.name}`, 
+            {
+              body: `After all the ${workTimeDuration} minutes of hardwork, your body deserves a ${activity.data.duration} minutes ${activity.data.name}`,
+              icon: bellImage,
+              	})
+          }
+        else {
+          toast.success(
+            `After all the ${workTimeDuration} minutes of hardwork, your body deserves a ${activity.data.duration} minutes ${activity.data.name}`,
+            {
+              position: "top-right",
+              autoClose: 3000,
+            },
+          );
+        }
+      },
+      workTime * 60 * 1000,
+    );
+  }
+
+  useEffect(() => {
+    if (activity && workTimeDuration > 0) {
+      handleActivityNotification();
+    }
+  }, [activity, workTimeDuration]);
+
   const CustomToast = ({ sender, message }) => (
     <div>
       <strong>{sender}:</strong> {message}
     </div>
   );
-  const [messagesChannel] = useChannel("messages", (message) => {
+
+  const { channel: messagesChannel} = useChannel("messages", (message) => {
     toast(
       <CustomToast sender={message.data.name} message={message.data.message} />,
       {
@@ -37,61 +94,8 @@ const App = () => {
     );
   });
 
-  function handleToastNotification() {
-    setTimeout(
-      () => {
-        toast.success(
-          `After all the ${workTime} minutes of hardwork, your body deserves a ${activity.data.duration} minutes ${activity.data.name}`,
-          {
-            position: "top-right",
-            autoClose: 3000,
-          },
-        );
-      },
-      workTime * 60 * 1000,
-    );
-  }
-
-  useEffect(() => {
-    if (activity && workTime > 0) {
-      handleToastNotification();
-    }
-  }, [activity, workTime]);
-  // Function to handle form submission
-  function handleSubmit(e) {
-    e.preventDefault();
-    fetch("http://127.0.0.1:3001/sendbreaktime", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json;charset=utf-8",
-      },
-      body: JSON.stringify({
-        duration: breakTimeDuration,
-      }),
-    })
-      .then((response) => {
-        response.json();
-      })
-      .catch((error) => {
-        console.error("Error sending break time data:", error);
-      });
-
-    setBreakTimeDuration(0);
-    setWorkTime(0);
-  }
-
-  function handleMessageSubmit(e) {
-    e.preventDefault();
-    messagesChannel.publish("message", {
-      name: userName,
-      message: message,
-    });
-    setMessage("");
-    setUserName("");
-  }
-
   function showSystemNotification() {
-    if (Notification in window) {
+    if (“Notification” in window) {
       if (Notification.permission === "granted") {
         let notification = new Notification("Need your attention", {
           body: "This site uses notifications for the best user experience. Thank you for understanding",
@@ -121,7 +125,7 @@ const App = () => {
       );
     }
   }
-
+  
   useEffect(() => showSystemNotification(), []);
 
   return (
@@ -138,8 +142,8 @@ const App = () => {
             <input
               className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
               type="number"
-              value={workTime}
-              onChange={(e) => setNotificationTime(e.target.value)}
+              value={workTimeDuration}
+              onChange={(e) => setWorkTimeDuration(e.target.value)}
             />
           </div>
           <div className="mb-6">
@@ -153,15 +157,13 @@ const App = () => {
               onChange={(e) => setBreakTimeDuration(e.target.value)}
             />
           </div>
-
           <button
             className="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5"
             type="submit"
           >
             Set Schedule
           </button>
-        </form>
-
+        </form>   
         <form className="my-10" onSubmit={handleMessageSubmit}>
           <p className="tracking-tighter text-gray-500 md:text-lg mb-2">
             Wanna share your goals with others?
@@ -196,12 +198,10 @@ const App = () => {
           </button>
         </form>
       </div>
-      <ToastContainer position="top-right" />
+      <ToastContainer />
     </div>
-  );
-};
+  )
+}
+
 
 export default App;
-
-
-
